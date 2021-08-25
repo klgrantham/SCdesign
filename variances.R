@@ -1,4 +1,5 @@
-# Efficiency comparisons for staircase design
+# Functions for generating design matrices, calculating variances and plotting
+# relative variances, for complete stepped wedge and staircase designs
 #
 # Kelsey Grantham (kelsey.grantham@monash.edu)
 #
@@ -9,34 +10,37 @@ library(reshape2)
 
 # Generate stepped wedge design matrix
 # with K sequences and reps repeated sequences
-SWdesmat <- function(K, reps=1) {
+SWdesmat <- function(S, reps=1) {
   # Inputs:
-  #  K - number of unique treatment sequences
+  #  S - number of unique treatment sequences
   #  reps - number of times each sequence is repeated
-  #  (K*reps = number of clusters)
+  #  (S*reps = number of clusters)
   # Output:
   #  Design matrix
-  Xsw <- matrix(data=0, ncol=(K+1), nrow=K)
-  for(i in 1:K) {
-    Xsw[i,(i+1):(K+1)] <- 1
+  Xsw <- matrix(data=0, ncol=(S+1), nrow=S)
+  for(i in 1:S) {
+    Xsw[i,(i+1):(S+1)] <- 1
   }
-  return(Xsw[sort(rep(1:K, reps)), ])
+  Xswreps <- Xsw[sort(rep(1:S, reps)), ]
+  return(Xswreps)
 }
 
 # Generate staircase design matrix
-SCdesmatprepost <- function(K, pre=1, post=1) {
+SCdesmat <- function(S, pre=1, post=1, reps=1) {
   # Inputs:
-  #  K - number of treatment sequences/clusters
+  #  S - number of treatment sequences/clusters
+  #  reps - number of times each sequence is repeated
   #  pre - number of pre-switch measurement periods
   #  post - number of post-switch measurement periods
   # Output:
   #  Design matrix
-  Xsc <- matrix(data=NA, nrow=K, ncol=(K+pre+post-1))
-  for(i in 1:K) {
-    Xsc[i,i:(i + pre-1)] <- 0
+  Xsc <- matrix(data=NA, nrow=S, ncol=(S+pre+post-1))
+  for(i in 1:S) {
+    Xsc[i,i:(i+pre-1)] <- 0
     Xsc[i,(i+pre):(i+pre+post-1)] <- 1
   }
-  return(Xsc)
+  Xscreps <- Xsc[sort(rep(1:S, reps)), ]
+  return(Xscreps)
 }
 
 # Calculate multiple-period CRT treatment effect variance
@@ -89,14 +93,18 @@ CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
   return(solve((t(Zmat)%*%solve(Vall)%*%Zmat))[ncol(Zmat),ncol(Zmat)])
 }
 
-varSWSC_plot <- function(m, S, T0, T1, corrtype, pereff){
-  # Compare variances of complete SW and staircase designs, each with S
-  # sequences/clusters, for a range of correlation parameters
+varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, pre_SC, post_SC,
+                                 reps_SC, corrtype, pereff){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
   # Inputs:
-  #  m - number of subjects per cluster-period
-  #  S - number of treatment sequences/clusters
-  #  T0 - number of pre-switch measurement periods
-  #  T1 - number of post-switch measurement periods
+  #  m_SW - number of subjects per cluster-period for SW design
+  #  S_SW - number of unique treatment sequences for SW design
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  m_SC - number of subjects per cluster-period for SC design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
   #  corrtype - within-cluster correlation structure type
   #             (0=block-exchangeable, 1=exponential decay)
   #  pereff - time period effect type
@@ -110,10 +118,10 @@ varSWSC_plot <- function(m, S, T0, T1, corrtype, pereff){
   SWSCvars <- matrix(data=NA, nrow= length(rho0seq), ncol=length(rseq))
   for(i in 1:length(rho0seq)) {
     for(rind in 1:length(rseq)) {
-      SWSCvars[i,rind] <-CRTVarSW(m, SCdesmatprepost(S, T0, T1), rho0seq[i],
-                                  rseq[rind], corrtype=corrtype, pereff=pereff)/
-                          CRTVarSW(m, SWdesmat(S), rho0seq[i],
-                                   rseq[rind], corrtype=corrtype, pereff=pereff)
+      SWSCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, pre_SC, post_SC, reps_SC),
+                      rho0seq[i], rseq[rind], corrtype=corrtype, pereff=pereff)/
+                        CRTVarSW(m_SW, SWdesmat(S_SW, reps_SW), rho0seq[i],
+                                 rseq[rind], corrtype=corrtype, pereff=pereff)
     }
   }
   
@@ -128,7 +136,7 @@ varSWSC_plot <- function(m, S, T0, T1, corrtype, pereff){
   rvec <- as.vector(matrix(data=rseq, nrow=length(rho0seq), ncol=length(rseq), byrow=TRUE))
   meltSWSCvars$rhoseq <- rhovec
   meltSWSCvars$rseq <- rvec
-
+  
   myplot <- ggplot(meltSWSCvars, aes(x=rseq, y=rhoseq)) + 
     geom_tile(aes(fill=value)) + 
     scale_fill_gradientn(colours=c("yellow","red")) +
@@ -139,6 +147,6 @@ varSWSC_plot <- function(m, S, T0, T1, corrtype, pereff){
           legend.background = element_rect(fill="grey95")) +
     coord_fixed() + xlab("Cluster autocorrelation, r") +  ylab("Within-period ICC") +
     geom_text(aes(rseq, rhoseq, label=round(value,2)), color="black", size=3) 
-
+  
   return(myplot)
 }
