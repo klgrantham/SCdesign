@@ -29,7 +29,7 @@ stopifnot(colSums(SWdesmat(3, 1))[4] == 3)
 stopifnot(colSums(SWdesmat(5, 2))[3] == 4)
 
 # Generate staircase design matrix
-SCdesmat <- function(S, pre=1, post=1, reps=1) {
+SCdesmat <- function(S, reps=1, pre=1, post=1) {
   # Inputs:
   #  S - number of treatment sequences/clusters
   #  reps - number of times each sequence is repeated
@@ -46,9 +46,9 @@ SCdesmat <- function(S, pre=1, post=1, reps=1) {
   return(Xscreps)
 }
 
-stopifnot(colSums(SCdesmat(3, 1, 1, 2), na.rm=TRUE) == c(0, 2, 2, 2))
-stopifnot(colSums(SCdesmat(5, 2, 2, 1), na.rm=TRUE)[2] == 0)
-stopifnot(colSums(SCdesmat(4, 1, 2, 2), na.rm=TRUE)[6] == 2)
+stopifnot(colSums(SCdesmat(3, 2, 1, 1), na.rm=TRUE) == c(0, 2, 2, 2))
+stopifnot(colSums(SCdesmat(5, 1, 2, 2), na.rm=TRUE)[2] == 0)
+stopifnot(colSums(SCdesmat(4, 2, 1, 2), na.rm=TRUE)[6] == 2)
 
 # Calculate multiple-period CRT treatment effect variance
 CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
@@ -100,8 +100,8 @@ CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
   return(solve((t(Zmat)%*%solve(Vall)%*%Zmat))[ncol(Zmat),ncol(Zmat)])
 }
 
-varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, pre_SC, post_SC,
-                                 reps_SC, corrtype, pereff){
+varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
+                                 pre_SC, post_SC, corrtype, pereff){
   # Compare variances of complete SW and staircase designs, for a range of
   # correlation parameters
   # Inputs:
@@ -110,6 +110,7 @@ varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, pre_SC, post_S
   #  reps_SW - number of times each sequence is repeated for SW design
   #  m_SC - number of subjects per cluster-period for SC design
   #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
   #  pre_SC - number of pre-switch measurement periods for SC design
   #  post_SC - number of post-switch measurement periods for SC design
   #  corrtype - within-cluster correlation structure type
@@ -125,7 +126,7 @@ varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, pre_SC, post_S
   SWSCvars <- matrix(data=NA, nrow=length(rho0seq), ncol=length(rseq))
   for(i in 1:length(rho0seq)) {
     for(rind in 1:length(rseq)) {
-      SWSCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, pre_SC, post_SC, reps_SC),
+      SWSCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, reps_SC, pre_SC, post_SC),
                       rho0seq[i], rseq[rind], corrtype=corrtype, pereff=pereff)/
                         CRTVarSW(m_SW, SWdesmat(S_SW, reps_SW), rho0seq[i],
                                  rseq[rind], corrtype=corrtype, pereff=pereff)
