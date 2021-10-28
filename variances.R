@@ -100,7 +100,7 @@ CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
   return(solve((t(Zmat)%*%solve(Vall)%*%Zmat))[ncol(Zmat),ncol(Zmat)])
 }
 
-varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
+varSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
                                  pre_SC, post_SC, corrtype, pereff){
   # Compare variances of complete SW and staircase designs, for a range of
   # correlation parameters
