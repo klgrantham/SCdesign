@@ -25,6 +25,9 @@ SWdesmat <- function(S, reps=1) {
   return(Xswreps)
 }
 
+stopifnot(colSums(SWdesmat(3, 1))[4] == 3)
+stopifnot(colSums(SWdesmat(5, 2))[3] == 4)
+
 # Generate staircase design matrix
 SCdesmat <- function(S, pre=1, post=1, reps=1) {
   # Inputs:
@@ -42,6 +45,10 @@ SCdesmat <- function(S, pre=1, post=1, reps=1) {
   Xscreps <- Xsc[sort(rep(1:S, reps)), ]
   return(Xscreps)
 }
+
+stopifnot(colSums(SCdesmat(3, 1, 1, 2), na.rm=TRUE) == c(0, 2, 2, 2))
+stopifnot(colSums(SCdesmat(5, 2, 2, 1), na.rm=TRUE)[2] == 0)
+stopifnot(colSums(SCdesmat(4, 1, 2, 2), na.rm=TRUE)[6] == 2)
 
 # Calculate multiple-period CRT treatment effect variance
 CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
@@ -115,7 +122,7 @@ varSCSW_plot_general <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, pre_SC, post_S
   rho0seq <- seq(0.01, 0.99, 0.05)
   rseq <- seq(0.0, 0.95, 0.05)
   
-  SWSCvars <- matrix(data=NA, nrow= length(rho0seq), ncol=length(rseq))
+  SWSCvars <- matrix(data=NA, nrow=length(rho0seq), ncol=length(rseq))
   for(i in 1:length(rho0seq)) {
     for(rind in 1:length(rseq)) {
       SWSCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, pre_SC, post_SC, reps_SC),
