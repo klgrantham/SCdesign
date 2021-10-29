@@ -7,6 +7,7 @@
 
 library(ggplot2)
 library(reshape2)
+library(tidyverse)
 
 # Generate stepped wedge design matrix
 # with K sequences and reps repeated sequences
@@ -100,8 +101,55 @@ CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
   return(solve((t(Zmat)%*%solve(Vall)%*%Zmat))[ncol(Zmat),ncol(Zmat)])
 }
 
+gridvals <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
+                     pre_SC, post_SC, corrtype, pereff){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  m_SW - number of subjects per cluster-period for SW design
+  #  S_SW - number of unique treatment sequences for SW design
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  m_SC - number of subjects per cluster-period for SC design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Relative variances (vartheta_SC/vartheta_SW) for a range of rho and r values
+  
+  rho0seq <- seq(0.01, 0.99, 0.05)
+  rseq <- seq(0.0, 0.95, 0.05)
+  
+  SCSWvars <- matrix(data=NA, nrow=length(rho0seq), ncol=length(rseq))
+  for(i in 1:length(rho0seq)) {
+    for(rind in 1:length(rseq)) {
+      SCSWvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, reps_SC, pre_SC, post_SC),
+                      rho0seq[i], rseq[rind], corrtype=corrtype, pereff=pereff)/
+                         CRTVarSW(m_SW, SWdesmat(S_SW, reps_SW), rho0seq[i],
+                      rseq[rind], corrtype=corrtype, pereff=pereff)
+    }
+  }
+  
+  # Plot the results using a contour plot
+  SCSWvars<-round(SCSWvars, 2)
+  meltSCSWvars <- melt(SCSWvars)
+  
+  names(meltSCSWvars)[names(meltSCSWvars)=="Var1"] <- "rho"
+  names(meltSCSWvars)[names(meltSCSWvars)=="Var2"] <- "r"
+  
+  rhovec <- as.vector(matrix(data=rho0seq, nrow=length(rho0seq), ncol=length(rseq), byrow=FALSE))
+  rvec <- as.vector(matrix(data=rseq, nrow=length(rho0seq), ncol=length(rseq), byrow=TRUE))
+  meltSCSWvars$rhoseq <- rhovec
+  meltSCSWvars$rseq <- rvec
+  return(meltSCSWvars)
+}
+
 varSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
-                                 pre_SC, post_SC, corrtype, pereff){
+                              pre_SC, post_SC, corrtype, pereff){
   # Compare variances of complete SW and staircase designs, for a range of
   # correlation parameters
   # Inputs:
@@ -119,33 +167,11 @@ varSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
   #           ('cat'=categorical period effects, 'lin'=linear period effects)
   # Output:
   #  Contour plot of relative variances (vartheta_SC/vartheta_SW)
-  
-  rho0seq <- seq(0.01, 0.99, 0.05)
-  rseq <- seq(0.0, 0.95, 0.05)
-  
-  SWSCvars <- matrix(data=NA, nrow=length(rho0seq), ncol=length(rseq))
-  for(i in 1:length(rho0seq)) {
-    for(rind in 1:length(rseq)) {
-      SWSCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, reps_SC, pre_SC, post_SC),
-                      rho0seq[i], rseq[rind], corrtype=corrtype, pereff=pereff)/
-                        CRTVarSW(m_SW, SWdesmat(S_SW, reps_SW), rho0seq[i],
-                                 rseq[rind], corrtype=corrtype, pereff=pereff)
-    }
-  }
-  
-  # Plot the results using a contour plot
-  SWSCvars<-round(SWSCvars, 2)
-  meltSWSCvars <- melt(SWSCvars)
-  
-  names(meltSWSCvars)[names(meltSWSCvars)=="Var1"] <- "rho"
-  names(meltSWSCvars)[names(meltSWSCvars)=="Var2"] <- "r"
-  
-  rhovec <- as.vector(matrix(data=rho0seq, nrow=length(rho0seq), ncol=length(rseq), byrow=FALSE))
-  rvec <- as.vector(matrix(data=rseq, nrow=length(rho0seq), ncol=length(rseq), byrow=TRUE))
-  meltSWSCvars$rhoseq <- rhovec
-  meltSWSCvars$rseq <- rvec
-  
-  myplot <- ggplot(meltSWSCvars, aes(x=rseq, y=rhoseq)) + 
+
+  relvars <- gridvals(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC, pre_SC, post_SC,
+                      corrtype, pereff)  
+
+  myplot <- ggplot(relvars, aes(x=rseq, y=rhoseq)) + 
     geom_tile(aes(fill=value)) + 
     scale_fill_gradientn(colours=c("yellow","red")) +
     scale_x_continuous(expand=c(0,0)) +
@@ -157,4 +183,76 @@ varSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
     geom_text(aes(rseq, rhoseq, label=round(value,2)), color="black", size=3) 
   
   return(myplot)
+}
+
+varSCSW_line_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
+                              pre_SC, post_SC, corrtype, pereff, title=""){
+  
+  vals <- gridvals(m_SW, S_SW, reps_SW,
+                   m_SC, S_SC, reps_SC, pre_SC, post_SC,
+                   corrtype, pereff)
+  
+  rvals <- c(0.25, 0.5, 0.75, 0.95)
+  relvars <- vals %>%
+    mutate(rfac=as.factor(rseq)) %>%
+    filter(rseq %in% rvals) %>%
+    select(c(rhoseq, rfac, value))
+  
+  p <- ggplot(data=relvars, aes(x=rhoseq, y=value, colour=rfac)) +
+    geom_line(size=1.2) +
+    geom_hline(yintercept=1, linetype="dashed") +
+#      expand_limits(y=ylimits) +
+    xlab("rho") +
+    ylab("Relative variance") +
+    labs(title=title) +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=12),
+          axis.title=element_text(size=10), axis.text=element_text(size=10),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=12), legend.text=element_text(size=12),
+          legend.position="bottom")
+  return(p)
+}
+
+varSCSW_multi_plot <- function(S_SW, reps_SW, S_SC, reps_SC,
+                               pre_SC, post_SC, corrtype){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  S_SW - number of unique treatment sequences for SW design
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  # Output:
+  #  Multiplot of relative variances (vartheta_SC/vartheta_SW), for m=10 and 100
+  #  and categorical and linear period effects
+  
+  m1 <- 10
+  m2 <- 100
+  
+  # m=10, categorical period effects
+  p1 <- varSCSW_line_plot(m1, S_SW, reps_SW, m1, S_SC, reps_SC, pre_SC, post_SC,
+                          corrtype, 'cat', bquote(paste("m = ", .(m1), ", ", "categorical period effects")))
+  # m=100, categorical period effects
+  p2 <- varSCSW_line_plot(m2, S_SW, reps_SW, m2, S_SC, reps_SC, pre_SC, post_SC,
+                          corrtype, 'cat', bquote(paste("m = ", .(m2), ", ", "categorical period effects")))
+  # m=10, linear period effects
+  p3 <- varSCSW_line_plot(m1, S_SW, reps_SW, m1, S_SC, reps_SC, pre_SC, post_SC,
+                          corrtype, 'lin', bquote(paste("m = ", .(m1), ", ", "linear period effects")))
+  # m=100, linear period effects
+  p4 <- varSCSW_line_plot(m2, S_SW, reps_SW, m2, S_SC, reps_SC, pre_SC, post_SC,
+                          corrtype, 'lin', bquote(paste("m = ", .(m2), ", ", "linear period effects")))
+  mylegend <- g_legend(p1)
+  title <- bquote(paste("Relative variance of treatment effect estimators, ",
+                        Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
+                        Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")]))
+  p1to4 <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title=title)
+  ggsave(paste0("plots/SC", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW", S_SW, reps_SW, ".jpg"),
+         p1to4, width=9, height=7, units="in", dpi=800)
+  
+  return(p1to4)
 }
