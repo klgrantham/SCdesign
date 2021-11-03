@@ -188,23 +188,37 @@ varSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
 varSCSW_line_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
                               pre_SC, post_SC, corrtype, pereff, title=""){
   
-  vals <- gridvals(m_SW, S_SW, reps_SW,
-                   m_SC, S_SC, reps_SC, pre_SC, post_SC,
-                   corrtype, pereff)
-  
+  rhovals <- seq(0.01, 0.2, 0.005)
   rvals <- c(0.25, 0.5, 0.75, 0.95)
-  relvars <- vals %>%
-    mutate(rfac=as.factor(rseq)) %>%
-    filter(rseq %in% rvals) %>%
-    select(c(rhoseq, rfac, value))
-  
-  p <- ggplot(data=relvars, aes(x=rhoseq, y=value, colour=rfac)) +
+  relvars <- expand.grid(rho=rhovals, r=rvals)
+  relvars$varSC <- with(
+    relvars,
+    sapply(1:nrow(relvars), function(j){
+      CRTVarSW(m_SC, SCdesmat(S_SC, reps_SC, pre_SC, post_SC),
+               rho[j], r[j], corrtype, pereff)
+      }
+    )
+  )
+  relvars$varSW <- with(
+    relvars,
+    sapply(1:nrow(relvars), function(j){
+      CRTVarSW(m_SW, SWdesmat(S_SW, reps_SW),
+               rho[j], r[j], corrtype, pereff)
+      }
+    )
+  )
+  relvars <- relvars %>%
+    mutate(relvarSCSW = varSC/varSW,
+           rfac=as.factor(r)) %>%
+    select(c(rho, rfac, relvarSCSW))
+
+  p <- ggplot(data=relvars, aes(x=rho, y=relvarSCSW, colour=rfac)) +
     geom_line(size=1.2) +
     geom_hline(yintercept=1, linetype="dashed") +
 #      expand_limits(y=ylimits) +
-    xlab("rho") +
+    xlab("Within-period ICC") +
     ylab("Relative variance") +
-    labs(title=title) +
+    labs(title=title, colour="Cluster autocorrelation") +
     theme_bw() +
     theme(plot.title=element_text(hjust=0.5, size=12),
           axis.title=element_text(size=10), axis.text=element_text(size=10),
@@ -214,8 +228,7 @@ varSCSW_line_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
   return(p)
 }
 
-varSCSW_multi_plot <- function(S_SW, reps_SW, S_SC, reps_SC,
-                               pre_SC, post_SC, corrtype){
+varSCSW_multi_plot <- function(S_SW, reps_SW, S_SC, reps_SC, pre_SC, post_SC, corrtype){
   # Compare variances of complete SW and staircase designs, for a range of
   # correlation parameters
   # Inputs:
@@ -235,23 +248,41 @@ varSCSW_multi_plot <- function(S_SW, reps_SW, S_SC, reps_SC,
   m2 <- 100
   
   # m=10, categorical period effects
-  p1 <- varSCSW_line_plot(m1, S_SW, reps_SW, m1, S_SC, reps_SC, pre_SC, post_SC,
-                          corrtype, 'cat', bquote(paste("m = ", .(m1), ", ", "categorical period effects")))
+  p1 <- varSCSW_line_plot(
+    m1, S_SW, reps_SW,
+    m1, S_SC, reps_SC, pre_SC, post_SC,
+    corrtype, 'cat',
+    bquote(paste("m = ", .(m1), ", ", "categorical period effects"))
+    )
   # m=100, categorical period effects
-  p2 <- varSCSW_line_plot(m2, S_SW, reps_SW, m2, S_SC, reps_SC, pre_SC, post_SC,
-                          corrtype, 'cat', bquote(paste("m = ", .(m2), ", ", "categorical period effects")))
+  p2 <- varSCSW_line_plot(
+    m2, S_SW, reps_SW,
+    m2, S_SC, reps_SC, pre_SC, post_SC,
+    corrtype, 'cat',
+    bquote(paste("m = ", .(m2), ", ", "categorical period effects"))
+    )
   # m=10, linear period effects
-  p3 <- varSCSW_line_plot(m1, S_SW, reps_SW, m1, S_SC, reps_SC, pre_SC, post_SC,
-                          corrtype, 'lin', bquote(paste("m = ", .(m1), ", ", "linear period effects")))
+  p3 <- varSCSW_line_plot(
+    m1, S_SW, reps_SW,
+    m1, S_SC, reps_SC, pre_SC, post_SC,
+    corrtype, 'lin',
+    bquote(paste("m = ", .(m1), ", ", "linear period effects"))
+    )
   # m=100, linear period effects
-  p4 <- varSCSW_line_plot(m2, S_SW, reps_SW, m2, S_SC, reps_SC, pre_SC, post_SC,
-                          corrtype, 'lin', bquote(paste("m = ", .(m2), ", ", "linear period effects")))
+  p4 <- varSCSW_line_plot(
+    m2, S_SW, reps_SW,
+    m2, S_SC, reps_SC, pre_SC, post_SC,
+    corrtype, 'lin',
+    bquote(paste("m = ", .(m2), ", ", "linear period effects"))
+    )
   mylegend <- g_legend(p1)
   title <- bquote(paste("Relative variance of treatment effect estimators, ",
                         Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
                         Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")]))
   p1to4 <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title=title)
-  ggsave(paste0("plots/SC", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW", S_SW, reps_SW, ".jpg"),
+  corrname <- ifelse(corrtype==0, "BE", "DTD")
+  ggsave(paste0("plots/SC", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW",
+                S_SW, reps_SW, "_", corrname, ".jpg"),
          p1to4, width=9, height=7, units="in", dpi=800)
   
   return(p1to4)

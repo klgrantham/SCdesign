@@ -79,11 +79,17 @@ varSCSW_grid_plot(100, 7, 3, 100, 7, 3, 1, 1, 0, 'cat')
 # Slightly higher relative variance for some configurations, lower for others
 
 varSCSW_line_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'cat')
+
 varSCSW_line_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'lin')
 
 varSCSW_line_plot(100, 3, 1, 100, 3, 1, 1, 1, 0, 'cat')
 # For larger cluster-period size, relative variance ramps up more quickly as
 # within-period ICC increases
+
+# block-exchangeable
+varSCSW_multi_plot(3, 1, 3, 1, 1, 1, 0)
+# discrete-time decay
+varSCSW_multi_plot(3, 1, 3, 1, 1, 1, 1)
 
 varSCSW_line_plot(100, 7, 3, 100, 7, 3, 1, 1, 0, 'cat')
 varSCSW_line_plot(100, 7, 1, 100, 7, 1, 1, 1, 0, 'cat')
@@ -95,7 +101,13 @@ varSCSW_line_plot(100, 3, 1, 100, 6, 1, 1, 1, 0, 'cat')
 # For same number of cluster-periods, extended SC around twice as efficient as
 # SW design for values of r<0.75
 
+# block-exchangeable
 varSCSW_multi_plot(3, 1, 6, 1, 1, 1, 0)
+# discrete-time decay
+varSCSW_multi_plot(3, 1, 6, 1, 1, 1, 1)
 
 # m=100, discrete-time decaying correlation, categorical period effects
 varSCSW_line_plot(100, 3, 1, 100, 6, 1, 1, 1, 'cat')
+
+varSCSW_multi_plot(7, 5, 7, 5, 1, 1, 0)
+varSCSW_multi_plot(7, 5, 7, 5, 1, 1, 1)
