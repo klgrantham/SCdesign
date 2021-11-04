@@ -189,7 +189,7 @@ varSCSW_line_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
                               pre_SC, post_SC, corrtype, pereff, title=""){
   
   rhovals <- seq(0.01, 0.2, 0.005)
-  rvals <- c(0.25, 0.5, 0.75, 0.95)
+  rvals <- c(0.25, 0.5, 0.75, 0.95, 1.0)
   relvars <- expand.grid(rho=rhovals, r=rvals)
   relvars$varSC <- with(
     relvars,
