@@ -107,7 +107,9 @@ varSCSW_multi_plot(3, 1, 6, 1, 1, 1, 0)
 varSCSW_multi_plot(3, 1, 6, 1, 1, 1, 1)
 
 # m=100, discrete-time decaying correlation, categorical period effects
-varSCSW_line_plot(100, 3, 1, 100, 6, 1, 1, 1, 'cat')
+varSCSW_line_plot(100, 3, 1, 100, 6, 1, 1, 1, 0, 'cat')
 
 varSCSW_multi_plot(7, 5, 7, 5, 1, 1, 0)
 varSCSW_multi_plot(7, 5, 7, 5, 1, 1, 1)
+
+varSCSW_line_plot_sequences(c(3, 5, 10, 20), 0.9, 10, 1, 10, 1, 1, 1, 0, 'cat')

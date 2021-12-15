@@ -287,3 +287,109 @@ varSCSW_multi_plot <- function(S_SW, reps_SW, S_SC, reps_SC, pre_SC, post_SC, co
   
   return(p1to4)
 }
+
+varSCSW_line_plot_sequences <- function(S_vals, r, m_SW, reps_SW, m_SC, reps_SC,
+                                   pre_SC, post_SC, corrtype, pereff, title=""){
+  
+  rhovals <- seq(0.01, 0.2, 0.005)
+  r <- r
+  relvars <- expand.grid(S=S_vals, rho=rhovals, r=r)
+  relvars$varSC <- with(
+    relvars,
+    sapply(1:nrow(relvars), function(j){
+      CRTVarSW(m_SC, SCdesmat(S[j], reps_SC, pre_SC, post_SC),
+               rho[j], r[j], corrtype, pereff)
+    }
+    )
+  )
+  relvars$varSW <- with(
+    relvars,
+    sapply(1:nrow(relvars), function(j){
+      CRTVarSW(m_SW, SWdesmat(S[j], reps_SW),
+               rho[j], r[j], corrtype, pereff)
+    }
+    )
+  )
+  relvars <- relvars %>%
+    mutate(relvarSCSW = varSC/varSW,
+           Sfac=as.factor(S)) %>%
+    select(c(rho, Sfac, relvarSCSW))
+  
+  p <- ggplot(data=relvars, aes(x=rho, y=relvarSCSW, colour=Sfac)) +
+    geom_line(size=1.2) +
+    geom_hline(yintercept=1, linetype="dashed") +
+    #      expand_limits(y=ylimits) +
+    xlab("Within-period ICC") +
+    ylab("Relative variance") +
+    labs(title=title, colour="Sequences") +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=12),
+          axis.title=element_text(size=10), axis.text=element_text(size=10),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=12), legend.text=element_text(size=12),
+          legend.position="bottom")
+  return(p)
+}
+
+varSCSW_multi_plot_sequences <- function(S_vals, r, reps_SW, reps_SC, pre_SC, post_SC, corrtype){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  S_vals - numbers of unique treatment sequences, to form lines on plots, e.g. c(3, 5, 10, 20)
+  #  r - cluster autocorrelation value for all scenarios
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  # Output:
+  #  Multiplot of relative variances (vartheta_SC/vartheta_SW), for m=10 and 100
+  #  and categorical and linear period effects
+  
+  m1 <- 10
+  m2 <- 100
+  
+  # m=10, categorical period effects
+  p1 <- varSCSW_line_plot_sequences(
+    S_vals, r,
+    m1, reps_SW,
+    m1, reps_SC, pre_SC, post_SC,
+    corrtype, 'cat',
+    bquote(paste("m = ", .(m1), ", ", "categorical period effects"))
+  )
+  # m=100, categorical period effects
+  p2 <- varSCSW_line_plot_sequences(
+    S_vals, r,
+    m2, reps_SW,
+    m2, reps_SC, pre_SC, post_SC,
+    corrtype, 'cat',
+    bquote(paste("m = ", .(m2), ", ", "categorical period effects"))
+  )
+  # m=10, linear period effects
+  p3 <- varSCSW_line_plot_sequences(
+    S_vals, r, 
+    m1, reps_SW,
+    m1, reps_SC, pre_SC, post_SC,
+    corrtype, 'lin',
+    bquote(paste("m = ", .(m1), ", ", "linear period effects"))
+  )
+  # m=100, linear period effects
+  p4 <- varSCSW_line_plot_sequences(
+    S_vals, r,
+    m2, reps_SW,
+    m2, reps_SC, pre_SC, post_SC,
+    corrtype, 'lin',
+    bquote(paste("m = ", .(m2), ", ", "linear period effects"))
+  )
+  mylegend <- g_legend(p1)
+  title <- bquote(paste("Relative variance of treatment effect estimators, ",
+                        Var(hat(theta))[paste("SC(S,", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
+                          Var(hat(theta))[paste("SW(S,", .(reps_SW), ")")]))
+  p1to4 <- make_2x2_multiplot(p1, p2, p3, p4, mylegend, title=title)
+  corrname <- ifelse(corrtype==0, "BE", "DTD")
+  ggsave(paste0("plots/SC_S", reps_SC, pre_SC, post_SC, "_vs_SW_S",
+                reps_SW, "_", corrname, ".jpg"),
+         p1to4, width=9, height=7, units="in", dpi=800)
+  return(p1to4)
+}
