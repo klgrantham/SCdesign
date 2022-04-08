@@ -44,6 +44,11 @@ make_1x2_multiplot <- function(p1, p2, legend, title){
 # SC design with 3 clusters, 2 periods per sequence
 # Note: This is the embedded staircase design
 varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'cat')
+varSCSW_grid_small_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'cat')
+varSCSW_grid_small_plot(100, 3, 1, 100, 3, 1, 1, 1, 0, 'cat')
+
+varSCSW_grid_multiplot(3, 1, 3, 1, 1, 1, 0)
+
 varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'lin')
 
 # SW design with 3 clusters, 4 periods vs.
