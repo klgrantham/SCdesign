@@ -244,19 +244,21 @@ varSCSW_grid_multiplot <- function(S_SW, reps_SW, S_SC, reps_SC,
     facet_grid(
       m ~ pereff
     ) +
-    scale_fill_viridis_c(name="Relative variance") +
+    scale_fill_viridis_c(name="Relative variance", direction=-1) +
 #    scale_fill_gradientn(colours=c("yellow","red")) +
     scale_x_continuous(expand=c(0,0)) +
     scale_y_continuous(expand=c(0,0)) +
     theme(aspect.ratio=3/8,
           legend.key.width = unit(1.5, "cm"),
-          legend.title=element_text(size=12), legend.text=element_text(size=12),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom",
           plot.title=element_text(hjust=0.5, size=16),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
-          )) +
+          ),
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(size=12)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
 #    geom_text(aes(rseq, rhoseq, label=round(value,2)), color="black", size=3)  +
     ggtitle(bquote(paste("Relative variance of treatment effect estimators, ",
@@ -265,10 +267,170 @@ varSCSW_grid_multiplot <- function(S_SW, reps_SW, S_SC, reps_SC,
   corrname <- ifelse(corrtype==0, "BE", "DTD")
   ggsave(paste0("plots/multiplot_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
                 S_SW, reps_SW, "_", corrname, ".jpg"),
-         p, width=9, height=7, units="in", dpi=800)
+         p, width=9, height=5, units="in", dpi=800)
   return(p)
 }
 
+
+varSCSW_grid_multiplot_corr <- function(S_SW, reps_SW, S_SC, reps_SC,
+                                        pre_SC, post_SC, pereff){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  m_SW - number of subjects per cluster-period for SW design
+  #  S_SW - number of unique treatment sequences for SW design
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  m_SC - number of subjects per cluster-period for SC design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Contour plot of relative variances (vartheta_SC/vartheta_SW)
+  
+  m1 <- 10
+  m2 <- 100
+  relvars_m1_BE <- gridvals_small(m1, S_SW, reps_SW, m1, S_SC, reps_SC,
+                                   pre_SC, post_SC, 0, pereff)
+  relvars_m1_BE$m <- "m = 10"
+  relvars_m1_BE$corrname <- "Block-exchangeable"
+  relvars_m2_BE <- gridvals_small(m2, S_SW, reps_SW, m2, S_SC, reps_SC,
+                                   pre_SC, post_SC, 0, pereff)
+  relvars_m2_BE$m <- "m = 100"
+  relvars_m2_BE$corrname <- "Block-exchangeable"
+  relvars_m1_DTD <- gridvals_small(m1, S_SW, reps_SW, m1, S_SC, reps_SC,
+                                   pre_SC, post_SC, 1, pereff)
+  relvars_m1_DTD$m <- "m = 10"
+  relvars_m1_DTD$corrname <- "Discrete-time decay"
+  relvars_m2_DTD <- gridvals_small(m2, S_SW, reps_SW, m2, S_SC, reps_SC,
+                                   pre_SC, post_SC, 1, pereff)
+  relvars_m2_DTD$m <- "m = 100"
+  relvars_m2_DTD$corrname <- "Discrete-time decay"
+  relvars <- bind_rows(
+    relvars_m1_BE,
+    relvars_m2_BE,
+    relvars_m1_DTD,
+    relvars_m2_DTD
+  )
+  
+  p <- ggplot(relvars, aes(x=rseq, y=rhoseq)) + 
+    geom_tile(aes(fill=value)) +
+    facet_grid(
+      m ~ corrname
+    ) +
+    scale_fill_viridis_c(name="Relative variance", direction=-1) +
+    #    scale_fill_gradientn(colours=c("yellow","red")) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
+    #    geom_text(aes(rseq, rhoseq, label=round(value,2)), color="black", size=3)  +
+    ggtitle(bquote(paste("Relative variance of treatment effect estimators, ",
+                         Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
+                           Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")])))
+  ggsave(paste0("plots/multiplot_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
+                S_SW, reps_SW, "_", pereff, ".jpg"),
+         p, width=9, height=5, units="in", dpi=800)
+  return(p)
+}
+
+varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
+                                              pre_SC, post_SC, pereff){
+  # Compare variances of complete SW and staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  m_SW - number of subjects per cluster-period for SW design
+  #  S_SW - number of unique treatment sequences for SW design
+  #  reps_SW - number of times each sequence is repeated for SW design
+  #  m_SC - number of subjects per cluster-period for SC design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Contour plot of relative variances (vartheta_SC/vartheta_SW)
+  
+  m1_SW <- 10
+  m1_SC <- ((S_SW+1)/2)*m1_SW
+  m2_SW <- 100
+  m2_SC <- ((S_SW+1)/2)*m2_SW
+  relvars_m1_BE <- gridvals_small(m1_SW, S_SW, reps_SW, m1_SC, S_SC, reps_SC,
+                                  pre_SC, post_SC, 0, pereff)
+  relvars_m1_BE$m <- "m1"
+  relvars_m1_BE$corrname <- "Block-exchangeable"
+  relvars_m2_BE <- gridvals_small(m2_SW, S_SW, reps_SW, m2_SC, S_SC, reps_SC,
+                                  pre_SC, post_SC, 0, pereff)
+  relvars_m2_BE$m <- "m2"
+  relvars_m2_BE$corrname <- "Block-exchangeable"
+  relvars_m1_DTD <- gridvals_small(m1_SW, S_SW, reps_SW, m1_SC, S_SC, reps_SC,
+                                   pre_SC, post_SC, 1, pereff)
+  relvars_m1_DTD$m <- "m1"
+  relvars_m1_DTD$corrname <- "Discrete-time decay"
+  relvars_m2_DTD <- gridvals_small(m2_SW, S_SW, reps_SW, m2_SC, S_SC, reps_SC,
+                                   pre_SC, post_SC, 1, pereff)
+  relvars_m2_DTD$m <- "m2"
+  relvars_m2_DTD$corrname <- "Discrete-time decay"
+  relvars <- bind_rows(
+    relvars_m1_BE,
+    relvars_m2_BE,
+    relvars_m1_DTD,
+    relvars_m2_DTD
+  )
+  
+  m1lab <- paste("mSC=", m1_SC, ",", "mSW=", m1_SW)
+  m2lab <- paste("mSC=", m2_SC, ",", "mSW=", m2_SW)
+  m.labs <- c(m1lab, m2lab)
+  names(m.labs) <- c("m1", "m2")
+  corr.labs <- c("Block-exchangeable", "Discrete-time decay")
+  names(corr.labs) <- c("Block-exchangeable", "Discrete-time decay")
+  
+  p <- ggplot(relvars, aes(x=rseq, y=rhoseq)) + 
+    geom_tile(aes(fill=value)) +
+    facet_grid(
+      m ~ corrname,
+      labeller = labeller(m = m.labs, corrname = corr.labs)
+    ) +
+    scale_fill_viridis_c(name="Relative variance", direction=-1) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
+    ggtitle(bquote(paste("Relative variance of treatment effect estimators, ",
+                         Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
+                           Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")])))
+  ggsave(paste0("plots/multiplot_diffm_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
+                S_SW, reps_SW, "_", pereff, ".jpg"),
+         p, width=9, height=5, units="in", dpi=800)
+  return(p)
+}
 
 
 gridvals <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,

@@ -38,6 +38,22 @@ make_1x2_multiplot <- function(p1, p2, legend, title){
   return(p)
 }
 
+
+varSCSW_grid_multiplot_corr(3, 1, 3, 1, 1, 1, 'cat')
+varSCSW_grid_multiplot_corr(10, 1, 10, 1, 1, 1, 'cat')
+varSCSW_grid_multiplot_corr(20, 1, 20, 1, 1, 1, 'cat')
+
+varSCSW_grid_multiplot_corr(3, 1, 3, 1, 1, 1, 'lin')
+varSCSW_grid_multiplot_corr(10, 1, 10, 1, 1, 1, 'lin')
+varSCSW_grid_multiplot_corr(20, 1, 20, 1, 1, 1, 'lin')
+
+varSCSW_grid_multiplot_corr_diffm(3, 1, 3, 1, 1, 1, 'cat')
+varSCSW_grid_multiplot_corr_diffm(10, 1, 10, 1, 1, 1, 'cat')
+
+varSCSW_grid_multiplot_corr(3, 1, 6, 1, 1, 1, 'cat')
+varSCSW_grid_multiplot_corr(3, 1, 6, 1, 1, 1, 'lin')
+varSCSW_grid_multiplot_corr(3, 1, 3, 2, 1, 1, 'cat')
+
 ## Block exchangeable within-cluster correlation ##
 
 # SW design with 3 clusters, 4 periods vs.
@@ -48,6 +64,9 @@ varSCSW_grid_small_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'cat')
 varSCSW_grid_small_plot(100, 3, 1, 100, 3, 1, 1, 1, 0, 'cat')
 
 varSCSW_grid_multiplot(3, 1, 3, 1, 1, 1, 0)
+varSCSW_grid_multiplot(3, 1, 3, 1, 1, 1, 1)
+
+
 
 varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 0, 'lin')
 
