@@ -395,18 +395,34 @@ varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
     relvars_m2_DTD
   )
   
-  m1lab <- paste("mSC=", m1_SC, ",", "mSW=", m1_SW)
-  m2lab <- paste("mSC=", m2_SC, ",", "mSW=", m2_SW)
-  m.labs <- c(m1lab, m2lab)
+#  relvars$m <- as.factor(relvars$m)
+#  levels(relvars$m) <- c(bquote(m[SC]*''==''*.(m1_SC)), bquote(m[SC]*''==''*.(m2_SC)))
+#  levels(relvars$m) <- c(bquote(m[SC] == .(m1_SC)), "'mSC=200, mSW=100'")
+#  relvars$corrname <- as.factor(relvars$corrname)
+#  levels(relvars$corrname) <- c("Block-exchangeable", "Discrete-time decay")
+  
+#  m1lab <- bquote(m[SC]*''==''*.(m1_SC))
+#  m2lab <- bquote(m[SC]*''==''*.(m2_SC))
+#  m1lab <- expression(paste(Var(hat(theta))[CCD], "=20\nmSW=10"))
+#  m2lab <- "mSW=100"
+#  m2lab <- paste("mSC=", m2_SC, ",", "mSW=", m2_SW)
+#  m.labs <- c(m1lab, m2lab)
+#  names(m.labs) <- c("m1", "m2")
+#  corr.labs <- c("Block-exchangeable", "Discrete-time decay")
+#  names(corr.labs) <- c("Block-exchangeable", "Discrete-time decay")
+
+#  m.labs <- c(`m1` = bquote(m[SC]*''==''*.(m1_SC)),
+#              `m2` = bquote(m[SC]*''==''*.(m2_SC)))
+  m.labs <- c("mSC=(S+1)mSW/2,\nmSW=10", "mSC=(S+1)mSW/2,\nmSW=100")
   names(m.labs) <- c("m1", "m2")
-  corr.labs <- c("Block-exchangeable", "Discrete-time decay")
-  names(corr.labs) <- c("Block-exchangeable", "Discrete-time decay")
   
   p <- ggplot(relvars, aes(x=rseq, y=rhoseq)) + 
     geom_tile(aes(fill=value)) +
     facet_grid(
       m ~ corrname,
-      labeller = labeller(m = m.labs, corrname = corr.labs)
+      labeller = labeller(m = m.labs)
+#      labeller = label_parsed
+#      labeller = label_bquote()
     ) +
     scale_fill_viridis_c(name="Relative variance", direction=-1) +
     scale_x_continuous(expand=c(0,0)) +
@@ -420,8 +436,8 @@ varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
           strip.background = element_rect(
             color="white", fill="white", linetype="solid"
           ),
-          strip.text.x = element_text(size = 12),
-          strip.text.y = element_text(size=12)) +
+          strip.text.x = element_text(size = 10),
+          strip.text.y = element_text(size=10)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
     ggtitle(bquote(paste("Relative variance of treatment effect estimators, ",
                          Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/

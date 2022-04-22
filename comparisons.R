@@ -50,6 +50,9 @@ varSCSW_grid_multiplot_corr(20, 1, 20, 1, 1, 1, 'lin')
 varSCSW_grid_multiplot_corr_diffm(3, 1, 3, 1, 1, 1, 'cat')
 varSCSW_grid_multiplot_corr_diffm(10, 1, 10, 1, 1, 1, 'cat')
 
+varSCSW_grid_multiplot_corr_diffm(3, 1, 3, 1, 1, 1, 'lin')
+varSCSW_grid_multiplot_corr_diffm(10, 1, 10, 1, 1, 1, 'lin')
+
 varSCSW_grid_multiplot_corr(3, 1, 6, 1, 1, 1, 'cat')
 varSCSW_grid_multiplot_corr(3, 1, 6, 1, 1, 1, 'lin')
 varSCSW_grid_multiplot_corr(3, 1, 3, 2, 1, 1, 'cat')
