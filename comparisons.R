@@ -38,6 +38,7 @@ make_1x2_multiplot <- function(p1, p2, legend, title){
   return(p)
 }
 
+varSC_grid_multiplot(3, 10, 1, 1, 1, 0, 'cat')
 
 varSCSW_grid_multiplot_corr(3, 1, 3, 1, 1, 1, 'cat')
 varSCSW_grid_multiplot_corr(10, 1, 10, 1, 1, 1, 'cat')

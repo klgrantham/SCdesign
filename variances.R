@@ -271,6 +271,112 @@ varSCSW_grid_multiplot <- function(S_SW, reps_SW, S_SC, reps_SC,
   return(p)
 }
 
+gridvals_varSC <- function(m_SC, S_SC, reps_SC, pre_SC, post_SC, corrtype, pereff){
+  # Get variances of staircase design, for a range of correlation parameters
+  # Inputs:
+  #  m_SC - number of subjects per cluster-period for SC design
+  #  S_SC - number of unique treatment sequences for SC design
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Variances for a range of rho and r values
+  
+  rho0seq <- seq(0.05, 0.95, 0.05)
+  rseq <- seq(0.05, 0.95, 0.05)
+  
+  SCvars <- matrix(data=NA, nrow=length(rho0seq), ncol=length(rseq))
+  for(i in 1:length(rho0seq)) {
+    for(rind in 1:length(rseq)) {
+      SCvars[i,rind] <-CRTVarSW(m_SC, SCdesmat(S_SC, reps_SC, pre_SC, post_SC),
+                                rho0seq[i], rseq[rind], corrtype=corrtype, pereff=pereff)
+    }
+  }
+  
+  # Plot the results using a contour plot
+  SCvars<-round(SCvars, 4)
+  meltSCvars <- melt(SCvars)
+  
+  names(meltSCvars)[names(meltSCvars)=="Var1"] <- "rho"
+  names(meltSCvars)[names(meltSCvars)=="Var2"] <- "r"
+  
+  rhovec <- as.vector(matrix(data=rho0seq, nrow=length(rho0seq), ncol=length(rseq), byrow=FALSE))
+  rvec <- as.vector(matrix(data=rseq, nrow=length(rho0seq), ncol=length(rseq), byrow=TRUE))
+  meltSCvars$rhoseq <- rhovec
+  meltSCvars$rseq <- rvec
+  return(meltSCvars)
+}
+
+varSC_grid_multiplot <- function(S1_SC, S2_SC, reps_SC, pre_SC, post_SC, corrtype, pereff){
+  # Display variances of staircase designs, for a range of
+  # correlation parameters
+  # Inputs:
+  #  S1_SC - number of unique treatment sequences for SC design (left column)
+  #  S2_SC - number of unique treatment sequences for SC design (right column)
+  #  reps_SC - number of times each sequence is repeated for SC design
+  #  pre_SC - number of pre-switch measurement periods for SC design
+  #  post_SC - number of post-switch measurement periods for SC design
+  #  corrtype - within-cluster correlation structure type
+  #             (0=block-exchangeable, 1=exponential decay)
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Contour plot of relative variances (vartheta_SC/vartheta_SW)
+  
+  m1 <- 10
+  m2 <- 100
+  S1 <- paste("S = ", S1_SC)
+  S2 <- paste("S = ", S2_SC)
+  
+  vars_m1_S1 <- gridvals_varSC(m1, S1_SC, reps_SC, pre_SC, post_SC, corrtype, pereff)
+  vars_m1_S1$m <- "m = 10"
+  vars_m1_S1$Sname <- S1
+  vars_m2_S1 <- gridvals_varSC(m2, S1_SC, reps_SC, pre_SC, post_SC, corrtype, pereff)
+  vars_m2_S1$m <- "m = 100"
+  vars_m2_S1$Sname <- S1
+  vars_m1_S2 <- gridvals_varSC(m1, S2_SC, reps_SC, pre_SC, post_SC, corrtype, pereff)
+  vars_m1_S2$m <- "m = 10"
+  vars_m1_S2$Sname <- S2
+  vars_m2_S2 <- gridvals_varSC(m2, S2_SC, reps_SC, pre_SC, post_SC, corrtype, pereff)
+  vars_m2_S2$m <- "m = 100"
+  vars_m2_S2$Sname <- S2
+  vars <- bind_rows(
+    vars_m1_S1,
+    vars_m2_S1,
+    vars_m1_S2,
+    vars_m2_S2
+  )
+  
+  p <- ggplot(vars, aes(x=rseq, y=rhoseq)) + 
+    geom_tile(aes(fill=value)) +
+    facet_grid(
+      m ~ Sname
+    ) +
+    scale_fill_viridis_c(name="Variance", direction=-1) +
+    scale_x_continuous(expand=c(0,0)) +
+    scale_y_continuous(expand=c(0,0)) +
+    theme(aspect.ratio=3/8,
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom",
+          plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size = 12),
+          strip.text.y = element_text(size=12)) +
+    coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
+    ggtitle(bquote(paste("Variance of treatment effect estimator, ",
+                         Var(hat(theta))[paste("SC(S,", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")])))
+  ggsave(paste0("plots/multiplot_SC_", S1_SC, "vs", S2_SC, reps_SC, pre_SC, post_SC, "_", corrtype, "_", pereff, ".jpg"),
+         p, width=9, height=5, units="in", dpi=800)
+  return(p)
+}
 
 varSCSW_grid_multiplot_corr <- function(S_SW, reps_SW, S_SC, reps_SC,
                                         pre_SC, post_SC, pereff){
