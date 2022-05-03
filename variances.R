@@ -857,3 +857,53 @@ VarSW_alt <- function(m, S, K, rho0, r){
   b <- r*sig2CP
   (12*(a - b)*(a + S*b))/(K*(S^2 - 1)*(2*a + S*b))
 }
+
+VarSClin <- function(m, S, K, rho0, rhou, r){
+  a <- (1 + (m-1)*rho0)/m
+  b <- (rhou + (m-1)*r*rho0)/m
+  
+  vartheta <- (2*((S^2+2)*a - (S^2-4)*b))/(K*S*(S^2-1))
+  return(vartheta)
+}
+
+varSCbasic_line_plot <- function(m, S, K, pereff, title=""){
+  
+  rhovals <- seq(0.01, 1.0, 0.01)
+  rvals <- c(0.25, 0.5, 0.75, 0.95, 1.0)
+  vars <- expand.grid(rho=rhovals, r=rvals)
+  
+  if(pereff=="cat"){
+    vars$varSC <- with(
+      vars,
+      sapply(1:nrow(vars), function(j){
+        VarSCcat(m, S, K, rho[j], r[j]*rho[j], r[j])
+      }
+      )
+    )
+  }else if(pereff=="lin"){
+    vars$varSC <- with(
+      vars,
+      sapply(1:nrow(vars), function(j){
+        VarSClin(m, S, K, rho[j], r[j]*rho[j], r[j])
+        }
+      )
+    )
+  }
+
+  vars <- vars %>%
+    mutate(rfac=as.factor(r)) %>%
+    select(c(rho, rfac, varSC))
+  
+  p <- ggplot(data=vars, aes(x=rho, y=varSC, colour=rfac)) +
+    geom_line(size=1.2) +
+    xlab("Within-period ICC") +
+    ylab("Variance") +
+    labs(title=title, colour="Cluster autocorrelation") +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=12),
+          axis.title=element_text(size=10), axis.text=element_text(size=10),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=12), legend.text=element_text(size=12),
+          legend.position="bottom")
+  return(p)
+}
