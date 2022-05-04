@@ -866,10 +866,19 @@ VarSClin <- function(m, S, K, rho0, rhou, r){
   return(vartheta)
 }
 
-varSCbasic_line_plot <- function(m, S, K, pereff, title=""){
+VarSCcat <- function(m, S, K, rho0, rhou, r){
+  a <- (1 + (m-1)*rho0)/m
+  b <- (rhou + (m-1)*r*rho0)/m
+
+  fracterm <- ((a + sqrt(a^2-b^2))^S - b^S)/((a + sqrt(a^2-b^2))^S + b^S)
+  vartheta <- (2*(a-b)^2)/(K*(S*(a-b)-sqrt(a^2-b^2)*fracterm))
+  return(vartheta)
+}
+
+VarSCbasic_line_plot <- function(m, S, K, pereff){
   
-  rhovals <- seq(0.01, 1.0, 0.01)
-  rvals <- c(0.25, 0.5, 0.75, 0.95, 1.0)
+  rhovals <- seq(0.01, .99, 0.01)
+  rvals <- c(0.2, 0.5, 0.8, 1.0)
   vars <- expand.grid(rho=rhovals, r=rvals)
   
   if(pereff=="cat"){
@@ -894,6 +903,8 @@ varSCbasic_line_plot <- function(m, S, K, pereff, title=""){
     mutate(rfac=as.factor(r)) %>%
     select(c(rho, rfac, varSC))
   
+  title <- bquote(paste("Variance of treatment effect estimator, ",
+                        Var(hat(theta))[paste("SC(", .(S), ",", .(K), ",", "1,1),", .(pereff))]))
   p <- ggplot(data=vars, aes(x=rho, y=varSC, colour=rfac)) +
     geom_line(size=1.2) +
     xlab("Within-period ICC") +
@@ -905,5 +916,122 @@ varSCbasic_line_plot <- function(m, S, K, pereff, title=""){
           legend.key.width = unit(1.5, "cm"),
           legend.title=element_text(size=12), legend.text=element_text(size=12),
           legend.position="bottom")
+  ggsave(paste0("plots/SC_", S, K, "11_", "m", m, "_", pereff, ".jpg"),
+         p, width=9, height=7, units="in", dpi=800)
   return(p)
 }
+
+VarSCbasic_multi_line_plot <- function(pereff){
+  # Compare variances of basic staircase designs for different configurations
+  # for a range of correlation parameters
+  # Inputs:
+  #  pereff - time period effect type
+  #           ('cat'=categorical period effects, 'lin'=linear period effects)
+  # Output:
+  #  Multiplot of variances (vartheta_SC), for m=10 and 100 (rows),
+  #    for S=3 and S=10 (columns) for the specified time effect
+  
+  rhovals <- seq(0.01, .99, 0.01)
+  rvals <- c(0.2, 0.5, 0.8, 1.0)
+  vars <- expand.grid(rho=rhovals, r=rvals)
+
+  S1 <- 3
+  S2 <- 10
+  m1 <- 10
+  m2 <- 100
+  
+  if(pereff=="cat"){
+    vars_m1_S1 <- vars %>%
+      mutate(
+        vals = VarSCcat(m1, S1, 1, rho, r*rho, r),
+        m = m1,
+        S = S1
+      )
+    vars_m1_S2 <- vars %>%
+      mutate(
+        vals = VarSCcat(m1, S2, 1, rho, r*rho, r),
+        m = m1,
+        S = S2
+      )
+    vars_m2_S1 <- vars %>%
+      mutate(
+        vals = VarSCcat(m2, S1, 1, rho, r*rho, r),
+        m = m2,
+        S = S1
+      )
+    vars_m2_S2 <- vars %>%
+      mutate(
+        vals = VarSCcat(m2, S2, 1, rho, r*rho, r),
+        m = m2,
+        S = S2
+      )
+  }else if(pereff=="lin"){
+    vars_m1_S1 <- vars %>%
+      mutate(
+        vals = VarSClin(m1, S1, 1, rho, r*rho, r),
+        m = m1,
+        S = S1
+      )
+    vars_m1_S2 <- vars %>%
+      mutate(
+        vals = VarSClin(m1, S2, 1, rho, r*rho, r),
+        m = m1,
+        S = S2
+      )
+    vars_m2_S1 <- vars %>%
+      mutate(
+        vals = VarSClin(m2, S1, 1, rho, r*rho, r),
+        m = m2,
+        S = S1
+      )
+    vars_m2_S2 <- vars %>%
+      mutate(
+        vals = VarSClin(m2, S2, 1, rho, r*rho, r),
+        m = m2,
+        S = S2
+      )
+  }
+  
+  allvars <- bind_rows(
+    vars_m1_S1,
+    vars_m1_S2,
+    vars_m2_S1,
+    vars_m2_S2
+  )
+
+  allvars <- allvars %>%
+    mutate(rfac = as.factor(r)) %>%
+    select(-r)
+  
+  m.labs <- c("m = 10", "m = 100")
+  names(m.labs) <- c(m1, m2)
+  S.labs <- c("S = 3", "S = 10")
+  names(S.labs) <- c(S1, S2)
+  
+  title <- bquote(paste("Variance of treatment effect estimator, ",
+                  Var(hat(theta))[paste("SC(S,1,1,1),", .(pereff))]))
+  p <- ggplot(allvars, aes(x=rho, y=vals, colour=rfac)) +
+    geom_line(size=1.2) +
+    facet_grid(
+      m ~ S,
+      labeller = labeller(m = m.labs, S = S.labs)
+    ) +
+    xlab(expression(paste("Within-period ICC, ", rho))) +
+    ylab("Variance") +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size=14),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom")
+  ggsave(paste0("plots/multiplot_SCbasic_S_", S1, "vs", S2, "_m_", m1, "vs", m2, "_", pereff, ".jpg"),
+         p, width=9, height=5, units="in", dpi=800)
+  return(p)
+}
+

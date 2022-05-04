@@ -5,4 +5,11 @@
 source('variances.R')
 
 # Variance of treatment effect estimator, varying different parameters
-varSCbasic_line_plot(10, 3, 1, 'lin', "Variance of treatment effect estimator")
+VarSCbasic_line_plot(10, 3, 1, 'cat')
+VarSCbasic_line_plot(10, 3, 1, 'lin')
+
+VarSCbasic_line_plot(10, 10, 1, 'cat')
+VarSCbasic_line_plot(10, 10, 1, 'lin')
+
+VarSCbasic_multi_line_plot('cat')
+VarSCbasic_multi_line_plot('lin')
