@@ -911,10 +911,10 @@ VarSCbasic_line_plot <- function(m, S, K, pereff){
     ylab("Variance") +
     labs(title=title, colour="Cluster autocorrelation") +
     theme_bw() +
-    theme(plot.title=element_text(hjust=0.5, size=12),
-          axis.title=element_text(size=10), axis.text=element_text(size=10),
+    theme(plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
           legend.key.width = unit(1.5, "cm"),
-          legend.title=element_text(size=12), legend.text=element_text(size=12),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom")
   ggsave(paste0("plots/SC_", S, K, "11_", "m", m, "_", pereff, ".jpg"),
          p, width=9, height=7, units="in", dpi=800)
