@@ -1035,3 +1035,44 @@ VarSCbasic_multi_line_plot <- function(pereff){
   return(p)
 }
 
+VarSCbasic_line_plot_m <- function(S, K, rho, pereff){
+  
+  mvals <- seq(10, 1000, 10)
+  rvals <- c(0.2, 0.5, 0.8, 1.0)
+  vars <- expand.grid(m=mvals, r=rvals)
+  
+  if(pereff=="cat"){
+    vars <- vars %>%
+      mutate(
+        varSC = VarSCcat(m, S, K, rho, rho*r, r),
+        S = S
+      )
+  }else if(pereff=="lin"){
+    vars <- vars %>%
+      mutate(
+        varSC = VarSClin(m, S, K, rho, rho*r, r),
+        S = S
+      )
+  }
+
+  vars <- vars %>%
+    mutate(rfac=as.factor(r)) %>%
+    select(-r)
+  
+  title <- bquote(paste("Variance of treatment effect estimator, ",
+                        Var(hat(theta))[paste("SC(", .(S), ",", .(K), ",", "1,1),", .(pereff))]))
+  p <- ggplot(data=vars, aes(x=m, y=varSC, colour=rfac)) +
+    geom_line(size=1.2) +
+    xlab(expression(paste("Cluster-period size, ", m))) +
+    ylab("Variance") +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=16), axis.text=element_text(size=16),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=16), legend.text=element_text(size=16),
+          legend.position="bottom")
+  ggsave(paste0("plots/SC_", S, K, "11_rho_", rho, "_diffm_", pereff, ".jpg"),
+         p, width=9, height=7, units="in", dpi=800)
+  return(p)
+}
