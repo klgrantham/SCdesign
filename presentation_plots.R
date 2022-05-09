@@ -44,7 +44,7 @@ VarSCbasic_line_plot <- function(m, S, K, pereff, ylims=NA, compare=FALSE, refva
     ylim(ylims) +
     xlab(expression(paste("Within-period ICC, ", rho))) +
     ylab("Variance") +
-    labs(title=title, colour="Cluster autocorrelation") +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
     theme_bw() +
     theme(plot.title=element_text(hjust=0.5, size=16),
           axis.title=element_text(size=16), axis.text=element_text(size=16),
@@ -104,7 +104,7 @@ VarSCbasic_line_plot_m <- function(rho, S, K, pereff, ylims=NA, compare=FALSE, r
     ylim(ylims) +
     xlab(expression(paste("Cluster-period size, ", m))) +
     ylab("Variance") +
-    labs(title=title, colour="Cluster autocorrelation") +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
     theme_bw() +
     theme(plot.title=element_text(hjust=0.5, size=16),
           axis.title=element_text(size=16), axis.text=element_text(size=16),
@@ -228,8 +228,8 @@ releffSCSW_grid_plot <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC, pre_S
                          (1/Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")])/
                            (1/Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")]))))
   corrname <- ifelse(corrtype==0, "BE", "DTD")
-  ggsave(paste0("plots/presentation/multiplot_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
-                S_SW, reps_SW, "_", corrname, "_", pereff, ".jpg"),
+  ggsave(paste0("plots/presentation/releff_SC_", S_SC, reps_SC, pre_SC, post_SC, "_m", m_SC, "_vs_SW_",
+                S_SW, reps_SW, "_m", m_SW, "_", corrname, "_", pereff, ".jpg"),
          p, width=9, height=5, units="in", dpi=800)
   return(p)
 }
@@ -251,25 +251,54 @@ VarSCbasic_line_plot_m(0.2, 10, 1, 'lin', ylims=c(0, 0.05), compare=TRUE, refvar
 # Variance plot: S=10, m=10, categorical versus linear
 VarSCbasic_line_plot(10, 10, 1, 'cat', ylims=c(0, 0.2), compare=TRUE, refvars=Varvals_SCbasic(10, 10, 1, 'lin'))
 
-## Relative variance results: for discrete-time decay model, categorical period effects?
+### Relative variance results: for discrete-time decay model, categorical period effects?
+
+## Embedded staircase vs complete stepped wedge
 
 # Relative variance plot: Contour plot for S=3, m=10
 varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 1, 'cat')
 varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(1,6.5), breaks=seq(1,6.5,1.0))
-varSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+releffSCSW_grid_plot(10, 3, 1, 10, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 
 # Relative variance plot: Contour plot for S=10, m=10 (present with similar legend shading?)
 varSCSW_grid_plot(10, 10, 1, 10, 10, 1, 1, 1, 1, 'cat')
-varSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(1,6.5), breaks=seq(1,6.5,1.0))
-varSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+varSCSW_grid_plot(10, 10, 1, 10, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(1,6.5), breaks=seq(1,6.5,1.0))
+releffSCSW_grid_plot(10, 10, 1, 10, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 
 # Relative variance plot: Contour plot for S=3, m=100
 varSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat')
 varSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(1,6.5), breaks=seq(1,6.5,1.0))
-varSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+releffSCSW_grid_plot(100, 3, 1, 100, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 
 # Relative variance plot: Contour plot for S=10, m=100
 varSCSW_grid_plot(100, 10, 1, 100, 10, 1, 1, 1, 1, 'cat')
 varSCSW_grid_plot(100, 10, 1, 100, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(1,6.5), breaks=seq(1,6.5,1.0))
-varSCSW_grid_plot(100, 10, 1, 100, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+releffSCSW_grid_plot(100, 10, 1, 100, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 
+## Relative efficiency: Staircase with larger cluster-period size vs stepped wedge
+
+# Contour plot for S_SC=3, m_SC=20, S_SW=3, m_SW=10
+releffSCSW_grid_plot(10, 3, 1, 20, 3, 1, 1, 1, 1, 'cat')
+releffSCSW_grid_plot(10, 3, 1, 20, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0.5,1.6), breaks=seq(0.5,1.5,0.25))
+releffSCSW_grid_plot(10, 3, 1, 20, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1.6), breaks=seq(0,1.5,0.5))
+
+# Contour plot for S_SC=3, m_SC=200, S_SW=3, m_SW=100
+releffSCSW_grid_plot(100, 3, 1, 200, 3, 1, 1, 1, 1, 'cat')
+releffSCSW_grid_plot(100, 3, 1, 200, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.2), breaks=seq(0,2.0,0.5))
+releffSCSW_grid_plot(100, 3, 1, 200, 3, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1.6), breaks=seq(0,1.5,0.5))
+
+# Contour plot for S_SC=10, m_SC=55, S_SW=10, m_SW=10
+releffSCSW_grid_plot(10, 10, 1, 55, 10, 1, 1, 1, 1, 'cat')
+releffSCSW_grid_plot(10, 10, 1, 55, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+
+# Contour plot for S_SC=10, m_SC=550, S_SW=10, m_SW=100
+releffSCSW_grid_plot(100, 10, 1, 550, 10, 1, 1, 1, 1, 'cat')
+releffSCSW_grid_plot(100, 10, 1, 550, 10, 1, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+
+## Relative efficiency: Staircase with more clusters vs stepped wedge
+
+# Contour plot for S_SC=6, m_SC=10, S_SW=3, m_SW=10
+releffSCSW_grid_plot(10, 3, 1, 10, 6, 1, 1, 1, 1, 'cat')
+
+# Contour plot for S_SC=3, K_SC=2, m_SC=10, S_SW=3, m_SW=10
+releffSCSW_grid_plot(10, 3, 1, 10, 3, 2, 1, 1, 1, 'cat')
