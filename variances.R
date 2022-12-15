@@ -785,3 +785,9 @@ VarSCbasic_line_plot_m <- function(S, K, rho, pereff){
          p, width=9, height=7, units="in", dpi=800)
   return(p)
 }
+
+pow <- function(vars, effsize, siglevel=0.05){
+  z <- qnorm(siglevel/2)
+  pow <- pnorm(z + sqrt(1/vars)*effsize)
+  return(pow)
+}
