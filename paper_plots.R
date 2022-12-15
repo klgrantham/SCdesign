@@ -66,15 +66,16 @@ VarSCbasic_multi_line_plot <- function(pereff){
   
   title <- bquote(paste("Variance of treatment effect estimator, ",
                         Var(hat(theta))[paste("SC(S,1,1,1),", .(pereff))]))
-  p <- ggplot(allvars, aes(x=rho, y=varSC, colour=rfac)) +
+  p <- ggplot(allvars, aes(x=rho, y=varSC, colour=rfac, linetype=rfac)) +
     geom_line(size=1.2) +
     facet_grid(
       m ~ S,
       labeller = labeller(m = m.labs, S = S.labs)
     ) +
-    xlab(expression(paste("Within-period ICC, ", rho))) +
+    xlab(expression(paste("Within-period ICC, ", rho[0]))) +
     ylab("Variance") +
-    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r)),
+         linetype=expression(paste("Cluster autocorrelation, ", r))) +
     theme_bw() +
     theme(plot.title=element_text(hjust=0.5, size=16),
           axis.title=element_text(size=14), axis.text=element_text(size=14),
@@ -87,7 +88,7 @@ VarSCbasic_multi_line_plot <- function(pereff){
           legend.title=element_text(size=14), legend.text=element_text(size=14),
           legend.position="bottom")
   ggsave(paste0("plots/multiplot_SCbasic_S_", S1, "vs", S2, "_m_", m1, "vs", m2, "_", pereff, ".jpg"),
-         p, width=9, height=5, units="in", dpi=800)
+         p, width=9, height=5, units="in", dpi=300)
   return(p)
 }
 
@@ -131,7 +132,7 @@ VarSCbasic_line_plot_m <- function(rho, S, K, pereff, ylims=NA, compare=FALSE, r
     ylab("Variance") +
     labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
     theme_bw() +
-    theme(plot.title=element_text(hjust=0.5, size=16),
+    theme(plot.title=element_text(hjust=0.5, size=18),
           axis.title=element_text(size=16), axis.text=element_text(size=16),
           legend.key.width = unit(1.5, "cm"),
           legend.title=element_text(size=16), legend.text=element_text(size=16),
@@ -151,6 +152,58 @@ VarSCbasic_line_plot_m <- function(rho, S, K, pereff, ylims=NA, compare=FALSE, r
   
   return(p)
 }
+
+VarSCbasic_multi_line_plot_m <- function(rhos, S, K, pereff, ylims=c(0,1)){
+  
+  rho1 <- rhos[1]
+  rho2 <- rhos[2]
+
+  vars_rho1 <- Varvals_SCbasic_m(rho1, S, K, pereff)
+  vars_rho1$rho <- rho1
+  vars_rho2 <- Varvals_SCbasic_m(rho2, S, K, pereff)
+  vars_rho2$rho <- rho2
+  
+  vars <- bind_rows(
+    vars_rho1,
+    vars_rho2
+  )
+  
+  vars <- vars %>%
+    mutate(rfac=as.factor(r),
+           rhofac=as.factor(rho)) %>%
+    select(-r, -rho)
+
+  title <- bquote(paste("Variance of treatment effect estimator, ",
+                        Var(hat(theta))[paste("SC(", .(S), ",", .(K), ",", "1,1),", .(pereff))]))
+  p <- ggplot(data=vars, aes(x=m, y=varSC, colour=rfac, linetype=rfac)) +
+    geom_line(size=1.2) +
+    facet_grid(
+      . ~ rhofac,
+      labeller = label_bquote(cols = rho[0]==.(as.character(rhofac)))
+    ) +
+    ylim(ylims) +
+    xlab(expression(paste("Cluster-period size, ", m))) +
+    ylab("Variance") +
+    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r)),
+         linetype=expression(paste("Cluster autocorrelation, ", r))) +
+    theme_bw() +
+    theme(plot.title=element_text(hjust=0.5, size=16),
+          axis.title=element_text(size=14), axis.text=element_text(size=14),
+          strip.background = element_rect(
+            color="white", fill="white", linetype="solid"
+          ),
+          strip.text.x = element_text(size = 14),
+          strip.text.y = element_text(size=14),
+          legend.key.width = unit(1.5, "cm"),
+          legend.title=element_text(size=14), legend.text=element_text(size=14),
+          legend.position="bottom")
+
+  ggsave(paste0("plots/SC_", S, K, "11_rhos_", rho1, "_", rho2, "_diffm_", pereff, ".jpg"),
+         p, width=9, height=5, units="in", dpi=300)
+  
+  return(p)
+}
+
 
 gridvals_small <- function(m_SW, S_SW, reps_SW, m_SC, S_SC, reps_SC,
                            pre_SC, post_SC, corrtype, pereff){
@@ -298,8 +351,10 @@ releffSCSW_grid_multiplot_corr <- function(S_SW, reps_SW, S_SC, reps_SC,
   return(p)
 }
 
-varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
-                                              pre_SC, post_SC, pereff){
+releffSCSW_grid_multiplot_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
+                                            pre_SC, post_SC, pereff,
+                                            fixedscale=FALSE, limits=c(1,2),
+                                            breaks=seq(1,2,0.5)){
   # Compare variances of complete SW and staircase designs, for a range of
   # correlation parameters
   # Inputs:
@@ -345,18 +400,24 @@ varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
     relvars_m2_DTD
   )
   
-  m.labs <- c("mSC=(S+1)mSW/2,\nmSW=10", "mSC=(S+1)mSW/2,\nmSW=100")
+  if(fixedscale==TRUE){
+    fillopt <- scale_fill_viridis_c(name="Relative efficiency", direction=-1,
+                                    limits=limits, breaks=breaks)
+  }else{
+    fillopt <- scale_fill_viridis_c(name="Relative efficiency", direction=-1)
+  }
+  
+  m.labs <- c(paste("mSC = ", m1_SC, "\nmSW = 10"), paste("mSC = ", m2_SC, "\nmSW = 100"))
+#  m.labs <- c("mSC=(S+1)mSW/2,\nmSW=10", "mSC=(S+1)mSW/2,\nmSW=100")
   names(m.labs) <- c("m1", "m2")
   
-  p <- ggplot(relvars, aes(x=rseq, y=rhoseq)) + 
-    geom_tile(aes(fill=value)) +
+  p <- ggplot(relvars, aes(x=r, y=rho)) + 
+    geom_tile(aes(fill=releffSCSW)) +
     facet_grid(
       m ~ corrname,
       labeller = labeller(m = m.labs)
-      #      labeller = label_parsed
-      #      labeller = label_bquote()
     ) +
-    scale_fill_viridis_c(name="Relative variance", direction=-1) +
+    fillopt +
     scale_x_continuous(expand=c(0,0)) +
     scale_y_continuous(expand=c(0,0)) +
     theme(aspect.ratio=3/8,
@@ -371,10 +432,10 @@ varSCSW_grid_multiplot_corr_diffm <- function(S_SW, reps_SW, S_SC, reps_SC,
           strip.text.x = element_text(size = 10),
           strip.text.y = element_text(size=10)) +
     coord_fixed() + xlab(expression(paste("Cluster autocorrelation, ", r))) + ylab(expression(paste("Within-period ICC, ", rho))) +
-    ggtitle(bquote(paste("Relative variance of treatment effect estimators, ",
-                         Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")]/
-                           Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")])))
-  ggsave(paste0("plots/multiplot_diffm_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
+    ggtitle(bquote(paste("Relative efficiency, ",
+                         Var(hat(theta))[paste("SW(", .(S_SW), ",", .(reps_SW), ")")]/
+                           Var(hat(theta))[paste("SC(", .(S_SC), ",", .(reps_SC), ",", .(pre_SC), ",", .(post_SC), ")")])))
+  ggsave(paste0("plots/releff_diffm_SC_", S_SC, reps_SC, pre_SC, post_SC, "_vs_SW_",
                 S_SW, reps_SW, "_", pereff, ".jpg"),
          p, width=9, height=5, units="in", dpi=800)
   return(p)
@@ -388,7 +449,33 @@ VarSCbasic_multi_line_plot('lin')
 VarSCbasic_line_plot_m(0.05, 10, 1, 'cat', ylims=c(0, 0.035))
 VarSCbasic_line_plot_m(0.05, 10, 1, 'lin', ylims=c(0, 0.035))
 
-# Relative efficiency, embedded staircase
+VarSCbasic_multi_line_plot_m(c(0.05, 0.2), 10, 1, 'cat', ylims=c(0, 0.06))
+VarSCbasic_multi_line_plot_m(c(0.05, 0.2), 10, 1, 'lin', ylims=c(0, 0.06))
+
+## Relative efficiency
+
+# Embedded staircase vs stepped wedge
 releffSCSW_grid_multiplot_corr(3, 1, 3, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 releffSCSW_grid_multiplot_corr(3, 1, 3, 1, 1, 1, 'lin', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
 
+releffSCSW_grid_multiplot_corr(10, 1, 10, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+releffSCSW_grid_multiplot_corr(10, 1, 10, 1, 1, 1, 'lin', fixedscale=TRUE, limits=c(0,1), breaks=seq(0,1,0.2))
+
+# Staircase with larger cluster-period size vs stepped wedge
+releffSCSW_grid_multiplot_diffm(3, 1, 3, 1, 1, 1, 'cat')
+releffSCSW_grid_multiplot_diffm(3, 1, 3, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+releffSCSW_grid_multiplot_diffm(3, 1, 3, 1, 1, 1, 'lin', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+
+releffSCSW_grid_multiplot_diffm(10, 1, 10, 1, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+releffSCSW_grid_multiplot_diffm(10, 1, 10, 1, 1, 1, 'lin', fixedscale=TRUE, limits=c(0,2.5), breaks=seq(0,2.5,0.5))
+
+# Extended staircase vs stepped wedge
+releffSCSW_grid_multiplot_corr(3, 1, 3, 2, 1, 1, 'cat', fixedscale=TRUE, limits=c(0,2.0), breaks=seq(0,2.0,0.5))
+releffSCSW_grid_multiplot_corr(3, 1, 3, 2, 1, 1, 'lin', fixedscale=TRUE, limits=c(0,2.0), breaks=seq(0,2.0,0.5))
+
+
+## Trial examples
+
+# PROMPT trial
+CRTVarSW(20, SWdesmat(5, 1), 0.03, 1, 0, 'cat')/VarSCcat(20, 5, 1, 0.03, 0.03, 1)
+CRTVarSW(20, SWdesmat(5, 1), 0.03, 1, 0, 'cat')/VarSCcat(33, 5, 1, 0.03, 0.03, 1)
