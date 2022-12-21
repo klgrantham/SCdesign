@@ -1,40 +1,18 @@
-# Functions for generating design matrices, calculating variances and plotting
-# relative variances, for complete stepped wedge and staircase designs
+# Functions for generating design matrices and calculating variances
+# for staircase designs
 #
 # Kelsey Grantham (kelsey.grantham@monash.edu)
 #
-# Some functions based on previous work by J Kasza
 
 library(ggplot2)
 library(reshape2)
 library(tidyverse)
-library(viridis)
-
-# Generate stepped wedge design matrix
-# with K sequences and reps repeated sequences
-SWdesmat <- function(S, reps=1) {
-  # Inputs:
-  #  S - number of unique treatment sequences
-  #  reps - number of times each sequence is repeated
-  #  (S*reps = number of clusters)
-  # Output:
-  #  Design matrix
-  Xsw <- matrix(data=0, ncol=(S+1), nrow=S)
-  for(i in 1:S) {
-    Xsw[i,(i+1):(S+1)] <- 1
-  }
-  Xswreps <- Xsw[sort(rep(1:S, reps)), ]
-  return(Xswreps)
-}
-
-stopifnot(colSums(SWdesmat(3, 1))[4] == 3)
-stopifnot(colSums(SWdesmat(5, 2))[3] == 4)
 
 # Generate staircase design matrix
-SCdesmat <- function(S, reps=1, pre=1, post=1) {
+SCdesmat <- function(S, K=1, pre=1, post=1) {
   # Inputs:
   #  S - number of treatment sequences/clusters
-  #  reps - number of times each sequence is repeated
+  #  K - number of times each sequence is repeated
   #  pre - number of pre-switch measurement periods
   #  post - number of post-switch measurement periods
   # Output:
@@ -44,7 +22,7 @@ SCdesmat <- function(S, reps=1, pre=1, post=1) {
     Xsc[i,i:(i+pre-1)] <- 0
     Xsc[i,(i+pre):(i+pre+post-1)] <- 1
   }
-  Xscreps <- Xsc[sort(rep(1:S, reps)), ]
+  Xscreps <- Xsc[sort(rep(1:S, K)), ]
   return(Xscreps)
 }
 
@@ -53,7 +31,7 @@ stopifnot(colSums(SCdesmat(5, 1, 2, 2), na.rm=TRUE)[2] == 0)
 stopifnot(colSums(SCdesmat(4, 2, 1, 2), na.rm=TRUE)[6] == 2)
 
 # Calculate multiple-period CRT treatment effect variance
-CRTVarSW <- function(m, Xmat, rho0, r, corrtype, pereff) {
+CRTvartheta <- function(m, Xmat, rho0, r, corrtype, pereff) {
   # Inputs:
   #  m - number of subjects per cluster-period
   #  Xmat - design matrix (period effects and treatment sequences)
