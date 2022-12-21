@@ -151,7 +151,6 @@ VarSCbasic_line_plot_m <- function(rho, S, K, pereff, ylims=NA, compare=FALSE, r
   return(p)
 }
 
-## Keep ##
 VarSCbasic_multi_line_plot_m <- function(rhos, S, K, pereff, ylims=c(0,1)){
   
   rho1 <- rhos[1]
@@ -245,72 +244,27 @@ VarSCbasic_line_plot <- function(m, S, K, pereff){
   return(p)
 }
 
-VarSCbasic_line_plot_m <- function(S, K, rho, pereff){
-  
-  mvals <- seq(10, 1000, 10)
-  rvals <- c(0.2, 0.5, 0.8, 1.0)
-  vars <- expand.grid(m=mvals, r=rvals)
-  
-  if(pereff=="cat"){
-    vars <- vars %>%
-      mutate(
-        varSC = VarSCcat(m, S, K, rho, rho*r, r),
-        S = S
-      )
-  }else if(pereff=="lin"){
-    vars <- vars %>%
-      mutate(
-        varSC = VarSClin(m, S, K, rho, rho*r, r),
-        S = S
-      )
-  }
-  
-  vars <- vars %>%
-    mutate(rfac=as.factor(r)) %>%
-    select(-r)
-  
-  title <- bquote(paste("Variance of treatment effect estimator, ",
-                        Var(hat(theta))[paste("SC(", .(S), ",", .(K), ",", "1,1),", .(pereff))]))
-  p <- ggplot(data=vars, aes(x=m, y=varSC, colour=rfac)) +
-    geom_line(size=1.2) +
-    xlab(expression(paste("Cluster-period size, ", m))) +
-    ylab("Variance") +
-    labs(title=title, colour=expression(paste("Cluster autocorrelation, ", r))) +
-    theme_bw() +
-    theme(plot.title=element_text(hjust=0.5, size=16),
-          axis.title=element_text(size=16), axis.text=element_text(size=16),
-          legend.key.width = unit(1.5, "cm"),
-          legend.title=element_text(size=16), legend.text=element_text(size=16),
-          legend.position="bottom")
-  ggsave(paste0("plots/SC_", S, K, "11_rho_", rho, "_diffm_", pereff, ".jpg"),
-         p, width=9, height=7, units="in", dpi=800)
-  return(p)
-}
 
 # Figure 2: Variance of treatment effect estimator, varying within-period ICC,
 #           categorical period effects
 p2 <- VarSCbasic_multi_line_plot('cat')
-ggsave("plots/multiplot_SCbasic_S_3vs10_m_10vs100_cat.jpg",
-       p2, width=9, height=5, units="in", dpi=300)
-ggsave(paste0("plots/figure2.eps"), p2, width=9, height=5, units="in", dpi=800)
+ggsave(paste0("plots/figure2.eps"), p2, width=9, height=6, units="in", dpi=800)
+ggsave(paste0("plots/figure2.jpg"), p2, width=9, height=6, units="in", dpi=600)
 
 # Figure 3: Variance of treatment effect estimator, varying cluster-period size,
 #           categorical period effects
 p3 <- VarSCbasic_multi_line_plot_m(c(0.05, 0.2), 10, 1, 'cat', ylims=c(0, 0.06))
-ggsave(paste0("plots/SCbasic_S_10_K_1_rhos_5_20_diffm_cat.jpg"),
-       p3, width=9, height=5, units="in", dpi=300)
 ggsave(paste0("plots/figure3.eps"), p3, width=9, height=5, units="in", dpi=800)
+ggsave(paste0("plots/figure3.jpg"), p3, width=9, height=5, units="in", dpi=600)
 
 # Figure 4: Variance of treatment effect estimator, varying within-period ICC,
 #           linear period effects
 p4 <- VarSCbasic_multi_line_plot('lin')
-ggsave(paste0("plots/multiplot_SCbasic_S_3vs10_m_10vs100_lin.jpg"),
-       p4, width=9, height=5, units="in", dpi=300)
-ggsave(paste0("plots/figure4.eps"), p4, width=9, height=5, units="in", dpi=800)
+ggsave(paste0("plots/figure4.eps"), p4, width=9, height=6, units="in", dpi=800)
+ggsave(paste0("plots/figure4.jpg"), p4, width=9, height=6, units="in", dpi=600)
 
 # Figure 5: Variance of treatment effect estimator, varying cluster-period size,
 #           linear period effects
 p5 <- VarSCbasic_multi_line_plot_m(c(0.05, 0.2), 10, 1, 'lin', ylims=c(0, 0.06))
-ggsave(paste0("plots/SCbasic_S_10_K_1_rhos_5_20_diffm_lin.jpg"),
-       p5, width=9, height=5, units="in", dpi=300)
 ggsave(paste0("plots/figure5.eps"), p5, width=9, height=5, units="in", dpi=800)
+ggsave(paste0("plots/figure5.jpg"), p5, width=9, height=5, units="in", dpi=600)
