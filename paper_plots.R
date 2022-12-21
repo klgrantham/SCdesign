@@ -2,6 +2,8 @@
 #
 # Kelsey Grantham (kelsey.grantham@monash.edu)
 
+library(viridis)
+
 source('variances.R')
 
 Varvals_SCbasic_rho <- function(m, S, K, pereff){
@@ -68,6 +70,7 @@ VarSCbasic_multi_line_plot <- function(pereff){
                         var(hat(theta))[paste("SC(S,1,1,1),", .(pereff))]))
   p <- ggplot(allvars, aes(x=rho, y=varSC, colour=rfac, linetype=rfac)) +
     geom_line(size=1.2) +
+    scale_colour_viridis_d() +
     facet_grid(
       m ~ S,
       labeller = labeller(m = m.labs, S = S.labs)
@@ -175,6 +178,7 @@ VarSCbasic_multi_line_plot_m <- function(rhos, S, K, pereff, ylims=c(0,1)){
                         var(hat(theta))[paste("SC(", .(S), ",", .(K), ",", "1,1),", .(pereff))]))
   p <- ggplot(data=vars, aes(x=m, y=varSC, colour=rfac, linetype=rfac)) +
     geom_line(size=1.2) +
+    scale_colour_viridis_d() +
     facet_grid(
       . ~ rhofac,
       labeller = label_bquote(cols = rho[0]==.(as.character(rhofac)))
